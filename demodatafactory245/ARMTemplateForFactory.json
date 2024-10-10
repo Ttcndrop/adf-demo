@@ -1,0 +1,308 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "demodatafactory245"
+		},
+		"AzureDataLakeStorageLinkservice_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorageLinkservice'"
+		},
+		"AzureSqlDatabase1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabase1'"
+		},
+		"AzureDataLakeStorageLinkservice_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsdemoaccount.dfs.core.windows.net/"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "sqlservernomask.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "demodeployed"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "parashar"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Projecttemp')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataTransformation",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow1",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"sourceSALES": {},
+									"Sink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DATASOURCE')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorageLinkservice",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "sales_data.csv",
+						"folderPath": "Raw_data",
+						"fileSystem": "demofile"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "ORDERNUMBER",
+						"type": "String"
+					},
+					{
+						"name": "QUANTITYORDERED",
+						"type": "String"
+					},
+					{
+						"name": "PRICEEACH",
+						"type": "String"
+					},
+					{
+						"name": "ORDERLINENUMBER",
+						"type": "String"
+					},
+					{
+						"name": "SALES",
+						"type": "String"
+					},
+					{
+						"name": "ORDERDATE",
+						"type": "String"
+					},
+					{
+						"name": "STATUS",
+						"type": "String"
+					},
+					{
+						"name": "QTR_ID",
+						"type": "String"
+					},
+					{
+						"name": "MONTH_ID",
+						"type": "String"
+					},
+					{
+						"name": "YEAR_ID",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorageLinkservice')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TARGETTABLE')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "YEAR_ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "MONTH_ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "TotalSales",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "sales_mart",
+					"table": "SalesAggregate"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDataLakeStorageLinkservice')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorageLinkservice_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDataLakeStorageLinkservice_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": true,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDatabase1_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DATASOURCE",
+								"type": "DatasetReference"
+							},
+							"name": "sourceSALES"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "TARGETTABLE",
+								"type": "DatasetReference"
+							},
+							"name": "Sink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "filter"
+						},
+						{
+							"name": "Aggregatethedata"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ORDERNUMBER as short,",
+						"          QUANTITYORDERED as short,",
+						"          PRICEEACH as double,",
+						"          ORDERLINENUMBER as short,",
+						"          SALES as double,",
+						"          ORDERDATE as timestamp,",
+						"          STATUS as string,",
+						"          QTR_ID as short,",
+						"          MONTH_ID as short,",
+						"          YEAR_ID as short",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceSALES",
+						"sourceSALES filter(SALES>= 2000) ~> filter",
+						"filter aggregate(groupBy(YEAR_ID,",
+						"          MONTH_ID),",
+						"     TOTALSALES = sum(SALES)) ~> Aggregatethedata",
+						"Aggregatethedata sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     input(",
+						"          YEAR_ID as integer,",
+						"          MONTH_ID as integer,",
+						"          TotalSales as integer",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> Sink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DATASOURCE')]",
+				"[concat(variables('factoryId'), '/datasets/TARGETTABLE')]"
+			]
+		}
+	]
+}
