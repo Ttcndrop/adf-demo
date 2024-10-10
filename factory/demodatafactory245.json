@@ -1,0 +1,9 @@
+{
+	"name": "demodatafactory245",
+	"location": "northeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "f20c8ed5-4026-4d99-89aa-3955f86ac7cc",
+		"tenantId": "cedd2250-c622-4fe1-bca8-f0e2a2bfc03d"
+	}
+}
